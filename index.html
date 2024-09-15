@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wheel of Fortune</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-image: url('background.png'); /* Путь к фоновому изображению */
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+    .wheel-container {
+      position: relative;
+      width: 80vw; /* Размер колеса 80% от ширины экрана */
+      height: 80vw; /* Высота такая же, как ширина для сохранения пропорций */
+      max-width: 400px; /* Максимальный размер для больших экранов */
+      max-height: 400px; /* Ограничение по высоте для больших экранов */
+    }
+
+    .spin-btn {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 20vw; /* 20% от ширины экрана для кнопки */
+      height: 20vw; /* 20% от ширины экрана для высоты кнопки */
+      max-width: 100px; /* Максимальный размер кнопки на больших экранах */
+      max-height: 100px;
+      border-radius: 50%;
+      background-color: #ff5f5f;
+      color: white;
+      border: none;
+      font-size: 4vw; /* Размер шрифта адаптивен */
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    canvas {
+      border-radius: 50%;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      width: 100%; /* Делает холст адаптивным */
+      height: 100%; /* Холст занимает всю высоту контейнера */
+    }
+
+    .pointer {
+      position: absolute;
+      top: -15%; /* Расположен над колесом */
+      left: 50%;
+      transform: translateX(-50%);
+      width: 10vw; /* 10% от ширины экрана для изображения стрелки */
+      max-width: 40px; /* Максимальный размер стрелки */
+      height: auto;
+      z-index: 10;
+    }
+
+    /* Медиазапрос для iPhone X и выше */
+    @media (max-width: 375px) {
+      .spin-btn {
+        font-size: 5vw; /* Увеличить размер шрифта на маленьких экранах */
+      }
+
+      .pointer {
+        width: 15vw; /* Увеличить размер стрелки на маленьких экранах */
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wheel-container">
+    <canvas id="wheel" width="400" height="400"></canvas>
+    <button id="spin" class="spin-btn">Spin</button>
+    <img src="pointer.png" class="pointer" alt="Pointer"> <!-- Изображение указателя -->
+  </div>
+
+  <script>
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const spinBtn = document.getElementById("spin");
+
+    const sectors = 16; // Количество секторов
+    const sectorAngle = 360 / sectors; // Угол для каждого сектора
+    const radius = canvas.width / 2;
+
+    let currentAngle = 0;
+    let spinning = false;
+
+    // Загружаем изображение колеса
+    const wheelImage = new Image();
+    wheelImage.src = 'wheel.png'; // Путь к изображению колеса
+    wheelImage.onload = () => {
+      drawWheel(); // Рисуем изображение при загрузке
+    };
+
+    // Функция рисования колеса
+    function drawWheel() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.save();
+      ctx.translate(radius, radius);
+      ctx.rotate((currentAngle * Math.PI) / 180);
+      ctx.translate(-radius, -radius);
+      ctx.drawImage(wheelImage, 0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    // Функция вращения колеса
+    function spinWheel() {
+      if (spinning) return;
+
+      spinning = true;
+
+      // Случайный выбор выигрышного сектора
+      const winningSector = Math.floor(Math.random() * sectors);
+      const spinDuration = 3000;
+      const spins = Math.floor(Math.random() * 10) + 2; // Случайное количество оборотов
+
+      // Рассчитать конечный угол для остановки на выигрышном секторе
+      const targetAngle = (360 * spins) + (sectorAngle * winningSector) - (sectorAngle / 2);
+      const startTime = Date.now();
+
+      function animate() {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(elapsed / spinDuration, 1);
+        const easeOutQuad = 1 - Math.pow(1 - progress, 3); // Эффект замедления
+
+        currentAngle = targetAngle * easeOutQuad;
+
+        drawWheel(); // Рисуем изображение колеса при вращении
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          spinning = false;
+          // Вычисляем сектор, который оказался в верхней части
+          const normalizedAngle = (currentAngle % 360 + 360) % 360; // Нормализация угла
+          const topSectorAngle = (normalizedAngle + 90) % 360; // Поворот так, чтобы верх был 0 градусов
+          const winningSectorCalculated = Math.floor(((360 - topSectorAngle) % 360) / sectorAngle) % sectors;
+          alert(`Выигрышный сектор: ${winningSectorCalculated + 1}`);
+        }
+      }
+
+      animate();
+    }
+
+    spinBtn.addEventListener("click", spinWheel);
+  </script>
+</body>
+</html>
